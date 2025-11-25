@@ -37,13 +37,18 @@ jobs:
         run: npm install
 
       ############################
-      # 4. Docker Build + Push
+      # 4. Docker Login (IMPORTANT - must come before build)
+      ############################
+      - name: Login to Docker Hub
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login \
+            -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      ############################
+      # 5. Docker Build + Push
       ############################
       - name: Build and Push Docker Image
         run: |
           docker build -t swiggy-clone .
-          docker tag swiggy-clone sakthipachaiyappan78/swiggy-clone:latest
-          
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          
+          docker tag swiggy-clone:latest sakthipachaiyappan78/swiggy-clone:latest
           docker push sakthipachaiyappan78/swiggy-clone:latest
