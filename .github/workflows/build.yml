@@ -1,4 +1,4 @@
-name: Deploy
+name: Build and Deploy
 
 on:
   push:
@@ -6,8 +6,47 @@ on:
       - main
 
 jobs:
+  # ===========================
+  # 1. Build, Scan & Docker Push
+  # ===========================
+  build:
+    name: Build & Scan & Docker Push
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          projectBaseDir: .
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Login to Docker Hub
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login \
+            -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t swiggy-clone .
+          docker tag swiggy-clone:latest sakthipachaiyappan78/swiggy-clone:latest
+          docker push sakthipachaiyappan78/swiggy-clone:latest
+
+  # ===========================
+  # 2. Deploy Docker Container
+  # ===========================
   deploy:
-    needs: build      # If you have a separate 'build' workflow in the same repo
+    name: Deploy
+    needs: build  # Runs after build job
     runs-on: self-hosted
 
     steps:
