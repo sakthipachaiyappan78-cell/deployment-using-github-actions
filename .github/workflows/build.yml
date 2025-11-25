@@ -1,54 +1,10 @@
-name: Build
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  build:
-    name: Build & Scan & Docker Push
-    runs-on: self-hosted
-
-    steps:
-      ############################
-      # 1. Pull source code
-      ############################
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      ############################
-      # 2. SonarQube Scan
-      ############################
-      - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@master
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        with:
-          projectBaseDir: .
-
-      ############################
-      # 3. Install Node Modules
-      ############################
-      - name: Install dependencies
-        run: npm install
-
-      ############################
-      # 4. Docker Login (IMPORTANT - must come before build)
-      ############################
-      - name: Login to Docker Hub
-        run: |
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login \
-            -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-
-      ############################
-      # 5. Docker Build + Push
-      ############################
-      - name: Build and Push Docker Image
-        run: |
-          docker build -t swiggy-clone .
-          docker tag swiggy-clone:latest sakthipachaiyappan78/swiggy-clone:latest
-          docker push sakthipachaiyappan78/swiggy-clone:latest
+deploy:
+   needs: build
+   runs-on: self-hosted
+   steps:
+      - name: docker pull image
+        run: docker pull sakthipachaiyappan78/swiggy-clone:latest
+      - name: Image scan
+        run: trivy image sakthipachaiyappan78/swiggy-clone:latest > trivyimagedeploy.txt
+      - name: Deploy to container
+        run: docker run -d --name swiggy-clone -p 3000:3000 sakthipachaiyappan78/swiggy-clone:latest
