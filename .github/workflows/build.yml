@@ -3,29 +3,47 @@ name: Build
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   build:
-    name: Build
+    name: Build & Scan & Docker Push
     runs-on: self-hosted
+
     steps:
-      - uses: actions/checkout@v2
+      ############################
+      # 1. Pull source code
+      ############################
+      - name: Checkout Code
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - uses: sonarsource/sonarqube-scan-action@main
+          fetch-depth: 0
+
+      ############################
+      # 2. SonarQube Scan
+      ############################
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-      - name: NPM Install
+        with:
+          projectBaseDir: .
+
+      ############################
+      # 3. Install Node Modules
+      ############################
+      - name: Install dependencies
         run: npm install
-        
-      - name: Docker build and push
+
+      ############################
+      # 4. Docker Build + Push
+      ############################
+      - name: Build and Push Docker Image
         run: |
-          # Run commands to build and push Docker images
           docker build -t swiggy-clone .
           docker tag swiggy-clone sakthipachaiyappan78/swiggy-clone:latest
-          docker login -u ${{ secrets.Dockerhub_username }} -p ${{ secrets.Dockerhub_token }}
+          
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          
           docker push sakthipachaiyappan78/swiggy-clone:latest
-        env:
-          DOCKER_CLI_ACI: 1
