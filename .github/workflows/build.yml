@@ -3,7 +3,7 @@ name: Build
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   build:
@@ -23,7 +23,7 @@ jobs:
       # 2. SonarQube Scan
       ############################
       - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@master
+        uses: sonarsource/sonarqube-scan-action@main
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
